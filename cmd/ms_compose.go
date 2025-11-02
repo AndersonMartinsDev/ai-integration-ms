@@ -3,7 +3,6 @@ package cmd
 import (
 	services "ai-integration-ms/internal/application/service"
 	"ai-integration-ms/internal/infrastructure/ai/gemini"
-	"ai-integration-ms/internal/infrastructure/grpc_client"
 	"ai-integration-ms/internal/infrastructure/rabbitmq"
 	"ai-integration-ms/internal/infrastructure/repository"
 	"log"
@@ -13,24 +12,20 @@ import (
 )
 
 type MSCompose struct {
-	AgentModelMSUrl       string
-	WebHookProcessorMSURL string
-	RabbitMQURL           string
+	RabbitMQURL     string
+	MetaAccessToken string
 }
 
 func NewMSCompose() *MSCompose {
 	return &MSCompose{
-		AgentModelMSUrl:       os.Getenv("AGENT_MODEL_URL"),
-		WebHookProcessorMSURL: os.Getenv("WEBHOOK_PROCESSOR_URL"),
-		RabbitMQURL:           os.Getenv("RABBITMQ_URL"),
+		RabbitMQURL:     os.Getenv("RABBITMQ_URL_FILE"),
+		MetaAccessToken: os.Getenv("META_ACCESS_TOKEN"),
 	}
 }
 
 func (manager MSCompose) GeminiServiceConfiguration(cacheService services.CacheService) *services.GeminiService {
 	gemini_client := gemini.NewGeminiClient(gemini.GEMINI_MODEL)
-	agent_model_client := grpc_client.NewAgentModelClient(grpc_client.GrcpConnection(manager.AgentModelMSUrl))
-	webhook_processor_client := grpc_client.NewWebHookProcessorClientImpl(grpc_client.GrcpConnection(manager.WebHookProcessorMSURL))
-	return services.NewGeminiService(gemini_client, agent_model_client, cacheService, webhook_processor_client)
+	return services.NewGeminiService(gemini_client, cacheService)
 }
 
 func (manager MSCompose) CacheServiceConfiguration() *services.CacheService {
@@ -39,6 +34,7 @@ func (manager MSCompose) CacheServiceConfiguration() *services.CacheService {
 }
 
 func (manager MSCompose) MessageProcessorConfiguration(conn *amqp.Connection, geminiService services.GeminiService) *services.MessageProcessor {
+	// httpClient := &http.Client{Timeout: 60 * time.Second}
 	publisher, err := rabbitmq.NewPublisher(conn, "whatsapp-outbound-messages")
 	if err != nil {
 		log.Fatalf("Falha ao criar publicador RabbitMQ: %v", err)

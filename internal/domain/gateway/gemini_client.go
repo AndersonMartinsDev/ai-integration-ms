@@ -14,4 +14,6 @@ type GeminiClient interface {
 		history []*genai.Content,
 		prompt string,
 	) (string, []*genai.Content, error)
+
+	TranscribeAudio(ctx context.Context, audioBytes []byte) (string, error)
 }

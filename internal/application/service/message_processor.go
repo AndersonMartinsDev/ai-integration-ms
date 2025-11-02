@@ -2,15 +2,18 @@ package services
 
 import (
 	"ai-integration-ms/internal/domain/message"
+	"ai-integration-ms/internal/domain/model"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"log/slog"
+	"net/http"
 	"time"
 )
 
 type MessageProcessor struct {
+	AIService     FileServiceInterface
 	GeminiService GeminiService
 	Consumer      message.MessageConsumer
 	Publisher     message.MessagePublisher
@@ -65,13 +68,38 @@ func (process *MessageProcessor) processWhatsAppMessages(ctx context.Context) er
 
 		slog.Info("Mensagem desserializada, processando com o Gemini...")
 
+		messageInput := inputMsg.Message
+
+		if inputMsg.MessageType == "audio" {
+			service, err := process.featureDetection(inputMsg.OriginMessage)
+			if err != nil {
+				slog.Error("Falha ao recuperar feature para baixar audio: ", err)
+				return err
+			}
+			audio, err := service.DownloadAudioFile(ctx, model.AiRequestModel{
+				MediaUrl:  inputMsg.MediaUrl,
+				MessageID: inputMsg.MessageID,
+				Number:    inputMsg.FontNumber,
+			})
+
+			if err != nil {
+				slog.Error("Falha ao baixar arquivo de audio", inputMsg.Message, inputMsg.Message, "error", err)
+				return err
+			}
+			audioText, err := process.GeminiService.TranscribeAudio(ctx, audio)
+			if err != nil {
+				slog.Error("Falha a transcrever arquivo de audio", inputMsg.Message, inputMsg.Message, "error", err)
+				return err
+			}
+			messageInput = audioText
+		}
+
 		response, err := process.GeminiService.GenerateText(
 			inputMsg.AgentID,
 			inputMsg.SessionKey,
 			inputMsg.FontNumber,
-			inputMsg.Message,
+			messageInput,
 		)
-
 		if err != nil {
 			slog.Error("Falha ao processar mensagem", "error", err)
 		}
@@ -81,6 +109,7 @@ func (process *MessageProcessor) processWhatsAppMessages(ctx context.Context) er
 		outputMessage.PhoneNumber = inputMsg.SessionKey
 		outputMessage.FontNumber = inputMsg.FontNumber
 		outputMessage.MessageType = inputMsg.MessageType
+		outputMessage.OriginMessage = inputMsg.OriginMessage
 
 		publisherMessage, erro := json.Marshal(outputMessage)
 		if erro != nil {
@@ -93,4 +122,16 @@ func (process *MessageProcessor) processWhatsAppMessages(ctx context.Context) er
 	// Retorna um erro para o loop principal, indicando que o consumo terminou.
 	// Isso sinaliza que o canal foi fechado e que uma reconexão é necessária.
 	return fmt.Errorf("canal de consumo fechado")
+}
+
+func (process *MessageProcessor) featureDetection(origin string) (FileServiceInterface, error) {
+	httpClient := &http.Client{Timeout: 60 * time.Second}
+	switch origin {
+	case "META":
+		return NewMetaService(httpClient, "PRECISA SER FEITA A LOGICA AINDA"), nil
+	case "WWEBJS":
+		return NewWWEBJSService(httpClient), nil
+	default:
+		return nil, fmt.Errorf("origem desconhecida: %s", origin)
+	}
 }

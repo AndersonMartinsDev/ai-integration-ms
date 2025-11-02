@@ -19,14 +19,10 @@ type GeminiService struct {
 
 func NewGeminiService(
 	geminiClient gateway.GeminiClient,
-	agentClient gateway.AgentClient,
-	cache CacheService,
-	webhookProcessorClient gateway.WebHookProcessorClient) *GeminiService {
+	cache CacheService) *GeminiService {
 	return &GeminiService{
-		AgentClient:            agentClient,
-		GeminiClient:           geminiClient,
-		WebHookProcessorClient: webhookProcessorClient,
-		CacheService:           cache,
+		GeminiClient: geminiClient,
+		CacheService: cache,
 	}
 }
 
@@ -65,6 +61,10 @@ func (s *GeminiService) GenerateText(agentId uint, keyId, fontNumber, prompt str
 	}()
 
 	return response, nil
+}
+
+func (s GeminiService) TranscribeAudio(ctx context.Context, audioBytes []byte) (string, error) {
+	return s.GeminiClient.TranscribeAudio(ctx, audioBytes)
 }
 
 func (s GeminiService) getAgent(agentId uint, uuid_user string) (string, error) {

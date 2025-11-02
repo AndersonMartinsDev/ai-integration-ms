@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  ai-integration-ms:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-integration-ms
+    restart: on-failure
+    
+    secrets:
+      - source: gcp_speech_key_json
+        target: /run/secrets/gcp_speech_key_json
+        
+      - source: gemini_api_key
+        target: /run/secrets/gemini_api_key 
+        
+      - source: redis_password
+        target: /run/secrets/redis_password 
+        
+      - source: rabbitmq_url
+        target: /run/secrets/rabbitmq_url
+
+    environment:
+      APPLICATION_NAME: ai-integration-ms
+      
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcp_speech_key_json
+      
+      GEMINI_URL: https://generativelanguage.googleapis.com
+      GEMINI_VERSION: v1beta
+      GEMINI_MODEL: gemini-2.0-flash
+
+      REDIS_ADDR: 146.235.42.19
+      REDIS_PORT: 6379
+
+      AGENT_MODEL_URL: agent-model-ms:50052
+      WWEBJS_MS_URL: http://lead-docker.duckdns.org:3000
+      GEMINI_API_KEY_FILE: /run/secrets/gemini_api_key
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
+      RABBITMQ_URL_FILE: /run/secrets/rabbitmq_url
+      
+    networks:
+      - internal-judite
+
+networks:
+  internal-judite:
+    driver: overlay 
+
+secrets:
+  gcp_speech_key_json:
+    name: gcp_speech_key_json
+    external: true 
+  gemini_api_key:
+    name: gemini_api_key
+    external: true
+  redis_password:
+    name: redis_password
+    external: true
+  rabbitmq_url:
+    name: rabbitmq_url
+    external: true
