@@ -1,22 +1,23 @@
 
-
 FROM golang:1.24.5-alpine AS builder
 
 WORKDIR /app
-COPY go.mod go.sum ./
 
+COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
 
-RUN go build -o main ./cmd/api
+RUN CGO_ENABLED=0 go build -ldflags "-s -w" -o main ./cmd/api
 
 FROM alpine:latest
+
 
 WORKDIR /app
 
 COPY --from=builder /app/main .
 
-# EXPOSE 50051
+RUN adduser -D appuser
+USER appuser
 
 CMD ["./main"]

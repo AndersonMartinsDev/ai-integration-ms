@@ -18,11 +18,13 @@ type GeminiService struct {
 }
 
 func NewGeminiService(
+	AgentClient gateway.AgentClient,
 	geminiClient gateway.GeminiClient,
 	cache CacheService) *GeminiService {
 	return &GeminiService{
 		GeminiClient: geminiClient,
 		CacheService: cache,
+		AgentClient:  AgentClient,
 	}
 }
 

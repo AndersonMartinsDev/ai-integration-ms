@@ -40,27 +40,19 @@ func LoadServer(routers http.Handler) {
 }
 
 func LoadRedis() {
-	redis_pass_secret, err := GetSecret("redis_password")
-	if err != nil {
-		panic(fmt.Sprintf("Error ao tentar recuperar Gemini Key: %e", err))
-	}
 	redis_address := os.Getenv("REDIS_ADDR")
 	redis_port := os.Getenv("REDIS_PORT")
-	redis_pass := redis_pass_secret
+	// redis_pass := GetSecret("REDIS_PASSWORD_FILE")
 
-	database.SetRedisEnv(redis_address, redis_port, redis_pass)
+	database.SetRedisEnv(redis_address, redis_port, "")
 	database.InitializeCache()
 }
 
 func ConfigGenerativeGemini() {
-	gemini_key_secret, err := GetSecret("gemini_api_key")
-	if err != nil {
-		panic(fmt.Sprintf("Error ao tentar recuperar Gemini Key: %e", err))
-	}
 	gemini_config := gemini.GeminiConfig{}
 	gemini_config.Url = os.Getenv("GEMINI_URL")
 	gemini_config.Version = os.Getenv("GEMINI_VERSION")
 	gemini_config.Model = os.Getenv("GEMINI_MODEL")
-	gemini_config.Key = gemini_key_secret
+	gemini_config.Key = GetSecret("GEMINI_API_KEY_FILE")
 	gemini_config.SetConfig()
 }

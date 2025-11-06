@@ -1,27 +1,21 @@
 package configuration
 
 import (
+	"fmt"
 	"os"
 	"strings"
 )
 
-const secretsPath = "/run/secrets/"
-
-// GetSecret le o valor de um arquivo Secret montado pelo Docker
-func GetSecret(secretName string) (string, error) {
-	filePath := secretsPath + secretName
-
-	// Verifica se o arquivo existe (ou fallback para env)
+func GetSecret(env string) string {
+	filePath := os.Getenv(env)
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		// Se nao for um Secret montado, tenta ler como Variavel de Ambiente (Fallback)
-		return os.Getenv(secretName), nil
+		panic(fmt.Sprintf("Error ao tentar recuperar secret! %s", filePath))
 	}
 
 	content, err := os.ReadFile(filePath)
 	if err != nil {
-		return "", err
+		panic("Error ao recuperar valor do secret")
 	}
 
-	// Remove quebras de linha ou espacos em branco que o Docker possa adicionar
-	return strings.TrimSpace(string(content)), nil
+	return strings.TrimSpace(string(content))
 }

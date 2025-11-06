@@ -21,6 +21,7 @@ var (
 )
 
 func (gem GeminiConfig) SetConfig() {
+
 	client, err := genai.NewClient(context.Background(), option.WithAPIKey(gem.Key))
 	if err != nil {
 		log.Fatalf("Error creating client: %v", err)

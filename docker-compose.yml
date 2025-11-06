@@ -2,25 +2,20 @@ version: '3.8'
 
 services:
   ai-integration-ms:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: ai-integration-ms
-    restart: on-failure
-    
+    image: ai-integration-ms:latest
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager # Exemplo de restrição de deploy
+    # Configuração de injeção de secrets
     secrets:
-      - source: gcp_speech_key_json
-        target: /run/secrets/gcp_speech_key_json
-        
-      - source: gemini_api_key
-        target: /run/secrets/gemini_api_key 
-        
-      - source: redis_password
-        target: /run/secrets/redis_password 
-        
-      - source: rabbitmq_url
-        target: /run/secrets/rabbitmq_url
-
+      - gcp_speech_key_json
+      - gemini_api_key
+      - redis_password
+      - rabbitmq_url
+      
     environment:
       APPLICATION_NAME: ai-integration-ms
       
@@ -38,24 +33,21 @@ services:
       GEMINI_API_KEY_FILE: /run/secrets/gemini_api_key
       REDIS_PASSWORD_FILE: /run/secrets/redis_password
       RABBITMQ_URL_FILE: /run/secrets/rabbitmq_url
-      
+
     networks:
       - internal-judite
 
 networks:
   internal-judite:
-    driver: overlay 
+    driver: overlay     
+    attachable: true
 
 secrets:
   gcp_speech_key_json:
-    name: gcp_speech_key_json
     external: true 
   gemini_api_key:
-    name: gemini_api_key
     external: true
   redis_password:
-    name: redis_password
     external: true
   rabbitmq_url:
-    name: rabbitmq_url
     external: true
