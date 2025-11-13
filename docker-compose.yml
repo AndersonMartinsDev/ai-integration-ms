@@ -39,8 +39,7 @@ services:
 
 networks:
   internal-judite:
-    driver: overlay     
-    attachable: true
+    external: true
 
 secrets:
   gcp_speech_key_json:
